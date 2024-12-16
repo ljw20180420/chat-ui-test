@@ -1,0 +1,63 @@
+services:
+  # nginx:
+  #   depends_on:
+  #     - chat-ui-db
+  #   restart: always
+  #   container_name: nginx_server
+  #   image: nginx:latest
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - "./docker-images/nginx/conf:/etc/nginx/conf.d"
+  #     - "./docker-images/nginx/html:/usr/share/nginx/html"
+  #   # command: [nginx-debug, '-g', 'daemon off;']
+
+  chat-ui-db:
+    depends_on:
+      # - TGI
+      - TEI
+      - searxng
+      - llama.cpp
+    restart: always
+    container_name: chat-ui-db
+    image: ghcr.io/huggingface/chat-ui-db:latest
+    volumes:
+      - "./docker-images/chat-ui/.env.local:/app/.env.local"
+      - "./docker-images/chat-ui/chat:/data"
+    ports:
+      - "3000:3000"
+
+  # TGI:
+  #   restart: always
+  #   container_name: chat-ui-TGI
+  #   image: ghcr.io/huggingface/text-generation-inference:latest
+  #   volumes:
+  #     - "./docker-images/chat-ui/TGI:/data"
+  #   # allow enough shared memory
+  #   shm_size: '1gb'
+  #   command: --model-id /data/Phi-3-mini-4k-instruct --disable-custom-kernels
+
+  TEI:
+    restart: always
+    container_name: chat-ui-TEI
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-latest 
+    volumes:
+      - "./docker-images/chat-ui/TEI:/data"
+    command: --model-id /data/bge-large-en-v1.5
+
+  searxng:
+    restart: always
+    container_name: chat-ui-searxng
+    image: searxng/searxng:latest
+    volumes:
+      - "./docker-images/chat-ui/searxng:/etc/searxng"
+    # ports:
+    #   - "53459:8080"
+
+  llama.cpp:
+    restart: always
+    container_name: chat-ui-llama.cpp
+    image: ghcr.io/ggerganov/llama.cpp:server
+    volumes:
+      - "./docker-images/chat-ui/llama.cpp:/models"
+    command: -m /models/Phi-3-mini-4k-instruct-gguf/Phi-3-mini-4k-instruct-q4.gguf -c 4096
